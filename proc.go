@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"hash/crc32"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 )
@@ -46,7 +48,7 @@ func (p *proc) validate(log logger) error {
 		p.Cmd = filepath.Join(xp, p.Cmd)
 	}
 	name := filepath.Base(p.Cmd)
-	p.cmdl = strings.Join(append([]string{p.Cmd}, p.Args...), string(0))
+	p.cmdl = strings.Join(append([]string{p.Cmd}, p.Args...), string(0)) + string(0)
 	hash := crc32.ChecksumIEEE([]byte(p.cmdl))
 	p.log = func(level int, msg string, args ...interface{}) {
 		msg = fmt.Sprintf("[%08x]ProcGuard(%s): %s", hash, name, msg)
@@ -56,7 +58,25 @@ func (p *proc) validate(log logger) error {
 }
 
 func (p *proc) killByCmdLine() int {
-	return 0 //TODO...
+	killed := 0
+	procs, _ := filepath.Glob("/proc/*")
+	for _, s := range procs {
+		pid, _ := strconv.Atoi(s[6:])
+		if pid == 0 {
+			continue
+		}
+		cmdline, _ := ioutil.ReadFile(filepath.Join(s, "cmdline"))
+		if string(cmdline) == p.cmdl {
+			proc, err := os.FindProcess(pid)
+			if err == nil {
+				err = proc.Kill()
+			}
+			if err == nil {
+				killed++
+			}
+		}
+	}
+	return killed
 }
 
 func (p *proc) start() (err error) {
