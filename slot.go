@@ -19,7 +19,7 @@ func (s slot) validate() error {
 	if err != nil {
 		return err
 	}
-	tu, err := time.Parse("15:04;05", s.Until)
+	tu, err := time.Parse("15:04:05", s.Until)
 	if err != nil {
 		return err
 	}
