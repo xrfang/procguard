@@ -1,6 +1,7 @@
 package procguard
 
 import (
+	"fmt"
 	"path/filepath"
 	"time"
 )
@@ -27,7 +28,10 @@ func (g *Guardian) Initialize(log logger) (err error) {
 	if g.Check <= 0 {
 		g.Check = 10 //默认10秒检查一次
 	}
-	g.log = log
+	g.log = func(level int, msg string, args ...interface{}) {
+		msg = fmt.Sprintf("ProcGuard: %s", msg)
+		log(level, msg, args...)
+	}
 	return nil
 }
 
